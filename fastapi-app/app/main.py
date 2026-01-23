@@ -1,8 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from typing import List, Literal, Optional
 from pydantic import BaseModel, Field
 from uuid import uuid4
 from datetime import datetime, timezone
+from app.settings import settings
 
 app = FastAPI(
     title="FastAPI App",
@@ -47,6 +48,16 @@ def find_item(item_id: str) -> Item:
             return item
     raise HTTPException(status_code=404, detail="Item not found")
 
+def find_item(item_name: str) -> Optional[Item]:
+    key = item_name.strip().lower()
+    for item in items:
+        if not item.isDeleted and item.name.strip().lower() == key:
+            return item
+    return None
+
+# --- Security ----
+def validate_token(token: str) -> bool:
+    return token == settings.api_token
 
 # --- Routes (CRUD) ---
 
@@ -61,8 +72,20 @@ def list_items(include_deleted: bool = False):
     return [i for i in items if not i.isDeleted]
 
 @app.post("/api/items", response_model=Item, status_code=201)
-def create_item(payload: ItemCreate):
+def create_item(payload: ItemCreate,  Authorization: str = Header(None)):
+    if not Authorization:
+        raise HTTPException(status_code=401, detail="Missing token")
+    
+    if validate_token(Authorization) == False:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    constraint = find_item(payload.name)
+
+    if constraint:
+        raise HTTPException(status_code=409, detail="Name not unique")
+
     t = now_iso()
+
     item = Item(
         id=str(uuid4()),
         name=payload.name,
@@ -92,7 +115,13 @@ def update_item(item_id: str, payload: ItemUpdate):
     return item
 
 @app.delete("/api/items/{item_id}", response_model=Item)
-def delete_item(item_id: str):
+def delete_item(item_id: str, Authorization: str = Header(None)):
+    if not Authorization:
+        raise HTTPException(status_code=401, detail="Missing token")
+    
+    if validate_token(Authorization) == False:
+        raise HTTPException(status_code=401, detail="Invalid token")
+       
     item = find_item(item_id)
 
     # soft delete
