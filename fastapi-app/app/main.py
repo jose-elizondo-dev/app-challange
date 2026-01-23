@@ -116,7 +116,7 @@ def update_item(item_id: str, payload: ItemUpdate):
     item.updatedAt = now_iso()
     return item
 
-@app.delete("/api/items/{item_id}", response_model=Item, status_code=204)
+@app.delete("/api/items/{item_id}", response_model=Item)
 def delete_item(item_id: str, Authorization: str = Header(None)):
     if not Authorization:
         raise HTTPException(status_code=401, detail="Missing token")
