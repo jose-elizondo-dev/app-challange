@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Settings(BaseSettings):
     api_token: str
 
@@ -8,5 +9,6 @@ class Settings(BaseSettings):
         env_prefix="",
         case_sensitive=False,
     )
+
 
 settings = Settings()
