@@ -110,6 +110,8 @@ def list_items(include_deleted: bool = False):
     return [i for i in items if not i.isDeleted]
 
 
+# Ejemplo prueba
+# http://127.0.0.1:8000/api/menu?search=pate&category=main&available=true&sort=price&order=asc&page=1&pageSize=10
 @app.get("/api/menu", response_model=PagedItems)
 def list_menu(
     search: Optional[str] = Query(None, description="Substring on name"),
