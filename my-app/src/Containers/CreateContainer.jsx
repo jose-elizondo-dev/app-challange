@@ -18,6 +18,16 @@ export default function CreateContainer() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (!form.name.trim()) {
+            alert("Name cannot be empty");
+            return;
+        }
+
+        if (!form.price || Number(form.price) <= 0) {
+            alert("Price must be greater than 0");
+            return;
+        }
+
         try {
             await createItem({ ...form, price: Number(form.price) });
             alert("Item created");

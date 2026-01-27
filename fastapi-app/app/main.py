@@ -1,6 +1,6 @@
 from fastapi import Depends, FastAPI, Header, Query, HTTPException
 from typing import List, Literal, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from uuid import uuid4
 from datetime import datetime, timezone
 from app.settings import settings
@@ -36,10 +36,17 @@ SortOrder = Literal["asc", "desc"]
 
 
 class ItemCreate(BaseModel):
-    name: str
+    name: str = Field(..., min_length=1)
     category: Category
     price: float
     isAvailable: bool = True
+
+    @field_validator("name")
+    @classmethod
+    def name_not_blank(cls, v: str):
+        if not v.strip():
+            raise ValueError("Name cannot be blank")
+        return v.strip()
 
 
 class ItemUpdate(BaseModel):
@@ -47,6 +54,13 @@ class ItemUpdate(BaseModel):
     category: Optional[Category] = None
     price: Optional[float] = None
     isAvailable: Optional[bool] = None
+
+    @field_validator("name")
+    @classmethod
+    def name_not_blank(cls, v):
+        if v is not None and not v.strip():
+            raise ValueError("Name cannot be blank")
+        return v.strip() if v else v
 
 
 class Item(BaseModel):
@@ -159,6 +173,10 @@ def list_menu(
 @app.post("/api/items", response_model=Item, status_code=201)
 def create_item(payload: ItemCreate, token: str = Depends(get_current_token)):
     constraint = find_item_name(payload.name)
+    if payload.price <= 0:
+        raise HTTPException(
+            status_code=400, detail="Price must be greater than 0")
+
     if constraint:
         raise HTTPException(status_code=409, detail="Name not unique")
     t = now_iso()

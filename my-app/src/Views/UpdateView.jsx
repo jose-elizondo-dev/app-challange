@@ -23,7 +23,11 @@ export default function UpdateView({ item, onSave }) {
 
             <label> <input type="checkbox" checked={isAvailable} onChange={(e) => setIsAvailable(e.target.checked)} /> Available </label>
 
-            <button onClick={() => onSave({ name, category, price: Number(price), isAvailable })}> Save </button>
+            <button onClick={() => {
+                if (!name.trim()) { alert("Name cannot be empty"); return; }
+                if (!price || Number(price) <= 0) { alert("Price must be greater than 0"); return; }
+                onSave({ name, category, price: Number(price), isAvailable })
+            }}> Save </button>
         </>
     );
 }

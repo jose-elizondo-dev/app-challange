@@ -14,8 +14,7 @@ export default function ListContainer() {
         order: "asc",
     });
 
-    //Siempre se ejecutan en base al [] <-- dependencias
-    //Se ejecuta cuando algo cambie en la variable de parametros
+
     useEffect(() => {
         fetchMenu(params).then(setData);
     }, [params]);
