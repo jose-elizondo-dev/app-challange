@@ -8,15 +8,18 @@ export default function ListContainer() {
         page: 1,
         pageSize: 5,
         search: "",
-        category: "",
-        available: "",
+        category: undefined,
+        available: undefined,
         sort: "name",
         order: "asc",
     });
 
+    //Siempre se ejecutan en base al [] <-- dependencias
+    //Se ejecuta cuando algo cambie en la variable de parametros
     useEffect(() => {
         fetchMenu(params).then(setData);
     }, [params]);
+
 
     return (
         <ListView

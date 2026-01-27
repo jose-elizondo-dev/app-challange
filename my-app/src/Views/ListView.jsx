@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import "./ListView.css";
 
 export default function ListView({ data, params, setParams, onDelete }) {
     return (
@@ -15,7 +16,7 @@ export default function ListView({ data, params, setParams, onDelete }) {
                 <option value="dessert">Dessert</option>
             </select>
 
-            <select onChange={(e) => setParams({ ...params, available: e.target.value })}>
+            <select onChange={(e) => setParams({ ...params, available: e.target.value === "" ? "" : e.target.value === "true" })}>
                 <option value="">All</option>
                 <option value="true">Available</option>
                 <option value="false">Unavailable</option>

@@ -1,5 +1,13 @@
-How to run it, under fastapi-app folder run this
+How to run it, under fastapi-app folder run this:
 
-python -m uvicorn app.main:app --reload
+-python -m venv venv
+-source venv/bin/activate  # Windows: venv\Scripts\activate
+-pip install -r requirements.txt
+-python -m uvicorn app.main:app --reload
 
-.env = token privado
+then under my-app folder run this:
+
+-npm install
+-npm run dev
+
+.env = private token, included only for the code challenge demonstration purposes (it should never be included in real projects)

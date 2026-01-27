@@ -17,9 +17,24 @@ export default function CreateContainer() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        await createItem({ ...form, price: Number(form.price) });
-        alert("Item created");
-        setForm({ name: "", category: "main", price: "", isAvailable: true });
+
+        try {
+            await createItem({ ...form, price: Number(form.price) });
+            alert("Item created");
+            setForm({ name: "", category: "main", price: "", isAvailable: true });
+
+        } catch (err) {
+            if (err.status === 401 || err.status === 403) {
+                alert("You are not authorized to create items");
+
+            } else if (err.status === 409) {
+                alert("An item with this name already exists");
+
+            } else {
+                alert("Unexpected error creating item");
+                console.error(err);
+            }
+        }
     };
 
     return <CreateView form={form} onChange={handleChange} onSubmit={handleSubmit} />;

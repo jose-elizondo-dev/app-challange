@@ -15,13 +15,13 @@ app = FastAPI(
 security = HTTPBearer()
 
 origins = [
-    "http://localhost:5173",  # tu frontend
-    "http://127.0.0.1:5173",  # otra forma de acceder
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # o ["*"] para permitir todos (solo desarrollo)
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -67,8 +67,19 @@ class PagedItems(BaseModel):
     items: List[Item]
 
 
-# --- Fake DB (in-memory) ---
+# --- DB (in-memory) ---
 items: List[Item] = []
+
+
+def get_current_token(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    token = credentials.credentials
+
+    if token != settings.api_token:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    return token
 
 
 def now_iso() -> str:
@@ -95,7 +106,7 @@ def find_item_name(item_name: str) -> Optional[Item]:
 def validate_token(token: str) -> bool:
     return token == settings.api_token
 
-# --- Routes (CRUD) ---
+# --- Routes ---
 
 
 @app.get("/")
@@ -110,8 +121,6 @@ def list_items(include_deleted: bool = False):
     return [i for i in items if not i.isDeleted]
 
 
-# Ejemplo prueba
-# http://127.0.0.1:8000/api/menu?search=pate&category=main&available=true&sort=price&order=asc&page=1&pageSize=10
 @app.get("/api/menu", response_model=PagedItems)
 def list_menu(
     search: Optional[str] = Query(None, description="Substring on name"),
@@ -122,54 +131,37 @@ def list_menu(
     page: int = Query(1, ge=1),
     pageSize: int = Query(10, ge=1, le=100),
 ):
-    # 1) base (excluir borrados)
+    # 1) base (exclude deleted)
     filtered = [i for i in items if not i.isDeleted]
-
-    # 2) filtros
+    # 2) filters
     if category is not None:
         filtered = [i for i in filtered if i.category == category]
-
     if available is not None:
         filtered = [i for i in filtered if i.isAvailable == available]
-
-    # 3) search substring en name (case-insensitive)
+    # 3) search substring in name (case-insensitive)
     if search:
         needle = search.strip().lower()
         filtered = [i for i in filtered if needle in i.name.strip().lower()]
-
     # 4) sorting
     reverse = (order == "desc")
     if sort == "price":
         filtered.sort(key=lambda x: x.price, reverse=reverse)
     else:  # name
         filtered.sort(key=lambda x: x.name.strip().lower(), reverse=reverse)
-
     # 5) pagination
     total = len(filtered)
     start = (page - 1) * pageSize
     end = start + pageSize
     page_items = filtered[start:end]
-
     return PagedItems(page=page, pageSize=pageSize, total=total, items=page_items)
 
 
 @app.post("/api/items", response_model=Item, status_code=201)
-def create_item(payload: ItemCreate,  credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials
-    print("Authorization header:", token)
-    if token != settings.api_token:
-        raise HTTPException(status_code=401, detail="Missing token")
-
-    if validate_token(token) == False:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
+def create_item(payload: ItemCreate, token: str = Depends(get_current_token)):
     constraint = find_item_name(payload.name)
-
     if constraint:
         raise HTTPException(status_code=409, detail="Name not unique")
-
     t = now_iso()
-
     item = Item(
         id=str(uuid4()),
         name=payload.name,
@@ -185,10 +177,7 @@ def create_item(payload: ItemCreate,  credentials: HTTPAuthorizationCredentials 
 
 
 @app.put("/api/items/{item_id}", response_model=Item)
-def update_item(item_id: str, payload: ItemUpdate, credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials
-    if token != settings.api_token:
-        raise HTTPException(status_code=401, detail="Invalid token")
+def update_item(item_id: str, payload: ItemUpdate, token: str = Depends(get_current_token)):
 
     item = find_item_id(item_id)
 
@@ -207,10 +196,7 @@ def update_item(item_id: str, payload: ItemUpdate, credentials: HTTPAuthorizatio
 
 
 @app.delete("/api/items/{item_id}", response_model=Item)
-def delete_item(item_id: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials
-    if token != settings.api_token:
-        raise HTTPException(status_code=401, detail="Invalid token")
+def delete_item(item_id: str, token: str = Depends(get_current_token)):
 
     item = find_item_id(item_id)
 

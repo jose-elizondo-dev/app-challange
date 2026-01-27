@@ -7,7 +7,7 @@ export default function UpdateContainer() {
     const { id } = useParams();
     const [item, setItem] = useState(null);
 
-    useEffect(() => {
+    /*useEffect(() => {
         fetchMenu({}).then((res) => {
             setItem(res.items.find((i) => i.id === id));
         });
@@ -23,5 +23,36 @@ export default function UpdateContainer() {
                 alert("Updated");
             }}
         />
+    );*/
+
+
+    useEffect(() => {
+        async function loadItem() {
+            try {
+                const res = await fetchMenu({});
+                const found = res.items.find((i) => i.id === id); // id alfanumérico
+                setItem(found);
+            } catch (err) {
+                console.error(err);
+                setItem(undefined); // para mostrar error si no se carga
+            }
+        }
+        loadItem();
+    }, [id]);
+
+    if (item === null) return <p>Loading...</p>;
+    if (item === undefined) return <p>Item not found</p>;
+
+    return (
+        <UpdateView
+            item={item}
+            onSave={async (data) => {
+                await updateItem(id, data);
+                alert("Updated");
+            }}
+        />
     );
+
+
+
 }
