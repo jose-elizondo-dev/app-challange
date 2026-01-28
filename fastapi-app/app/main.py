@@ -206,6 +206,11 @@ def update_item(item_id: str, payload: ItemUpdate, token: str = Depends(get_curr
         raise HTTPException(status_code=400, detail="Item is deleted")
 
     data = payload.model_dump(exclude_unset=True)
+
+    if "price" in data and data["price"] <= 0:
+        raise HTTPException(
+            status_code=400, detail="Price must be greater than 0")
+
     for k, v in data.items():
         setattr(item, k, v)
 
